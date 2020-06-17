@@ -1,10 +1,13 @@
 import React, { Component } from "react";
 
+import axios from '../../axios-order';
+
 import Aux from './../../hoc/Aux/Aux';
 import Burger from '../../components/Burger/Burger';
 import BuildControls from '../../components/Burger/BuildControls/BuildControls';
 import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary';
 import Modal from '../../components/UI/Modal/Modal';
+import Spinner from '../../components/UI/Spinner/Spinner';
 
 const INGREDIENT_PRICES = {
     salad: 12,
@@ -16,15 +19,17 @@ const INGREDIENT_PRICES = {
 class BurgerBuilder extends Component {
 
     state = {
-        ingredients: {
-            salad: 0,
-            bacon: 0,
-            cheese: 0,
-            souce: 0
-        },
+        ingredients: null,
         totalPrice: 10,
         purchasable: false,
-        purchasing: false
+        purchasing: false,
+        loading: false
+    }
+
+    componentDidMount() {
+        axios.get('/ingredients.json').then(response => {
+            this.setState({ ingredients: response.data });
+        })
     }
 
     updatePurchaseState(ingredients) {
@@ -78,7 +83,29 @@ class BurgerBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
-        alert('You Continue!');
+        // alert('You Continue!');
+
+        this.setState({ loading: true });
+        const order = {
+            ingredients: this.state.ingredients,
+            price: this.state.totalPrice,
+            customer: {
+                name: 'Avinash Thakur',
+                address: {
+                    country: 'India'
+                },
+                email: 'test@gmail.com'
+            },
+            deliveryMethod: 'fatest'
+        };
+
+        axios.post('/orders.json', order)
+            .then(response => {
+                this.setState({ loading: false, purchasing: false });
+            })
+            .catch(err => {
+                this.setState({ loading: false, purchasing: false });
+            })
     }
 
 
@@ -90,23 +117,40 @@ class BurgerBuilder extends Component {
             disabledInfo[key] = disabledInfo[key] <= 0;
         }
 
+        let orderSummary = null
+
+        let burger = <Spinner />;
+        if (this.state.ingredients) {
+            burger = (
+                <Aux>
+                    <Burger ingredients={this.state.ingredients} />
+                    <BuildControls
+                        ingredientAdded={this.addIngredientHandler}
+                        ingredientRemove={this.removeIngredientHandler}
+                        ordered={this.purchaseHandler}
+                        disabled={disabledInfo}
+                        purchasable={this.state.purchasable}
+                        price={this.state.totalPrice} />
+                </Aux>
+            );
+
+            orderSummary = <OrderSummary
+                purchaseCancelled={this.purchaseCancelHandler}
+                purchaseConitnued={this.purchaseContinueHandler}
+                price={this.state.totalPrice}
+                ingredients={this.state.ingredients} />;
+        }
+
+        if (this.state.loading) {
+            orderSummary = <Spinner />;
+        }
+
         return (
             <Aux>
                 <Modal show={this.state.purchasing} modalClosed={this.purchaseCancelHandler}>
-                    <OrderSummary
-                        purchaseCancelled={this.purchaseCancelHandler}
-                        purchaseConitnued={this.purchaseContinueHandler}
-                        price={this.state.totalPrice}
-                        ingredients={this.state.ingredients} />
+                    {orderSummary}
                 </Modal>
-                <Burger ingredients={this.state.ingredients} />
-                <BuildControls
-                    ingredientAdded={this.addIngredientHandler}
-                    ingredientRemove={this.removeIngredientHandler}
-                    ordered={this.purchaseHandler}
-                    disabled={disabledInfo}
-                    purchasable={this.state.purchasable}
-                    price={this.state.totalPrice} />
+                {burger}
             </Aux>
         );
     }
