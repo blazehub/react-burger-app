@@ -9,12 +9,12 @@ import classes from './Toolbar.css';
 const Toolbar = (props) => {
     return (
         <header className={classes.Toolbar}>
-            <DrawerToggle clicked={props.drawerToggleClicked}/>
+            <DrawerToggle clicked={props.drawerToggleClicked} />
             <div className={classes.Logo}>
                 <Logo height="80%" />
             </div>
             <nav className={classes.DesktopOnly}>
-                <NavigationItems />
+                <NavigationItems isAuthenticated={props.isAuthenticated} />
             </nav>
         </header>
     )
